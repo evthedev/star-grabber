@@ -30,14 +30,38 @@ function preload() {
     game.load.image('sky', './assets/sky.png')
     game.load.image('ground', './assets/platform.png')
     game.load.image('star', './assets/star.png')
+    game.load.spritesheet('baddie', './assets/baddie.png', 32, 32)
     game.load.image('nic', './assets/vampires-kiss.jpg')
     game.load.spritesheet('dude', './assets/dude.png', 32, 48)
 
 }
 
-var player, platforms, cursors, stars
+var player, platforms, cursors, stars, baddies
 
 var score = 0, scoreText
+
+var min = 0
+var max = 800
+var randomInt
+
+function getRandomIntInclusive(min, max) {
+    min = Math.ceil(min);
+    max = Math.floor(max);
+    return Math.floor(Math.random() * (max - min + 1)) + min
+}
+
+function createElements() {
+    for(var i = 0; i <= 7; i++) {
+        var star = stars.create(getRandomIntInclusive(min, max), 0, 'star')
+        star.body.gravity.y = 600
+        star.body.bounce.y = 0.7 + Math.random() * 0.2
+    }
+    for(var i = 0; i <= 3; i++) {
+        var baddie = baddies.create(getRandomIntInclusive(min, max), 0, 'baddie')
+        baddie.body.gravity.y = 900
+        baddie.body.bounce.y = 0.1 + Math.random() * 0.2
+    }
+}
 
 function create() {
     game.physics.startSystem(Phaser.Physics.ARCADE)
@@ -70,13 +94,14 @@ function create() {
     stars = game.add.group()
     stars.enableBody = true
 
-    for(var i = 0; i <= 12; i++) {
-        var star = stars.create(i * 70, 0, 'star')
-        star.body.gravity.y = 600
-        star.body.bounce.y = 0.7 + Math.random() * 0.2
-    }
+    baddies = game.add.group()
+    baddies.enableBody = true
+
+    createElements()
 
     scoreText = game.add.text(20, 20, 'Your score: 0', {fontSize: '30px', fill: '#000'})
+    game.add.text(20, 550, 'Collect stars for points. Avoid cats. Reach 150 points to win', {fontSize: '25px', fill: '#fff'})
+    game.time.events.loop(5000, createElements, this);
 
 }
 
@@ -101,17 +126,29 @@ function update() {
     }
 
     game.physics.arcade.collide(stars, platforms)
+    game.physics.arcade.collide(baddies, platforms)
     game.physics.arcade.overlap(player, stars, collectStar, null, this)
+    game.physics.arcade.overlap(player, baddies, getDamage, null, this)
 
     function collectStar(player, star) {
         star.kill()
         score += 10
         scoreText.text = 'Your score: ' + score
-        if (score == 120) {
+        scoreText.fill = 'black'
+        if (score == 150) {
             game.add.sprite(20, 20, 'nic')
-            game.add.text(100, 100, 'Y U take my stars!!', {fontSize: '100px', fill: '#000'})
+            game.add.text(130, 130, 'Y U take my stars', {fontSize: '100px', fill: '#000'})
         }
     }
+
+    function getDamage(player, baddie) {
+        baddie.kill()
+        score -= 10
+        scoreText.text = 'Your score: ' + score
+        scoreText.fill = 'red'
+    }
+
+    game.debug.text("Time to next drop: " + game.time.events.duration, 500, 32, {fontSize: '100px', fill: '#000'});
 }
 
 </script>
